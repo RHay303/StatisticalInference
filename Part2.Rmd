@@ -1,0 +1,143 @@
+---
+title: 'Stastical Inference Part 2: Tooth Growth Analysis'
+author: "Rhay"
+date: "3/14/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Overview of Requirements
+
+Analyze the ToothGrowth data in the R datasets package. The data is set of 60 observations, length of odontoblasts (teeth) in each of 10 guinea pigs at each of three dose levels of Vitamin C (0.5, 1 and 2 mg) with each of two delivery methods (orange juice or ascorbic acid).
+
+1.  Load the ToothGrowth data and perform some basic exploratory data analyses
+2.  Provide a basic summary of the data.
+3.  Use confidence intervals and/or hypothesis tests to compare tooth growth by supp and dose. (Only use the techniques from class, even if there's other approaches worth considering)
+4.  State your conclusions and the assumptions needed for your conclusions.
+
+```{r setup, include=FALSE}
+library(ggplot2)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Data Processing
+
+Load data
+
+```{r setvariables}
+data("ToothGrowth")
+
+#look at data structure
+str(ToothGrowth)
+```
+
+### Data Investigation
+
+```{r summ}
+summary(ToothGrowth)
+
+head(ToothGrowth,5)
+```
+
+```{r summ2}
+#display summary statistics from data
+summary(ToothGrowth)
+
+#display first 5 rows of data
+head(ToothGrowth,5)
+```
+
+Find unique values for each column
+
+```{r summ3}
+#display summary statistics from data
+unique(ToothGrowth$len)
+
+#Find the range to values for tooth length
+cat("The range to tooth values is:", range(ToothGrowth$len))
+
+#Show unique supplements
+unique(ToothGrowth$supp)
+
+#Find the unique values for dose
+cat("The unique dose values is:", unique(ToothGrowth$dose))
+
+#Find the range to values for dose
+cat("The range to dose values is:", range(ToothGrowth$dose))
+```
+
+Calculate the mean for each supplement type
+
+```{r mean}
+MeanSupp = split(ToothGrowth$len, ToothGrowth$supp)
+sapply(MeanSupp, mean)
+```
+
+### Plot Data
+
+Create a box plot to show the tooth length by dose amount by delivery method
+
+```{r plot1}
+# Convert dose to a factor
+ToothGrowth$dose<-as.factor(ToothGrowth$dose)
+
+# Plot tooth length ('len') vs. the dose amount ('dose'), broken out by supplement delivery method ('supp')
+ggplot(aes(x=dose, y=len), data=ToothGrowth) + geom_boxplot(aes(fill=dose)) + xlab("Dose Amount") + ylab("Tooth Length") + facet_grid(~ supp) + ggtitle("Figure 1 \nTooth Length vs. Dose Amount by Delivery Method") + 
+     theme(plot.title = element_text(lineheight=.8, face="bold"))
+```
+
+The blue and green boxes indicate that higher doses of both supplements resulted in longer tooth length (blue and green boxes). The green boxes show that for a dose=1, the mean and variance is higher for the OJ supplement. For the 0.5 dose, the mean for the OJ supplement is higher than for the OJ supplement.
+
+Let's plot the tooth length vs. Delivery Method by Dose Amount
+
+```{r plot2}
+ggplot(aes(x=supp, y=len), data=ToothGrowth) + geom_boxplot(aes(fill=supp)) + xlab("Supplement Delivery") + ylab("Tooth Length") + facet_grid(~ dose) + ggtitle("Figure 2: \nTooth Length vs. Delivery Method by Dose Amount") + 
+     theme(plot.title = element_text(lineheight=.8, face="bold"))
+```
+
+For doses of 0.5 and 1 it appears that the OJ supplement results in larger tooth length although more so for the does equal to 1. For the dose equal to 2 it appears that the supplements result in similar tooth length. However, there is a higher variance for the VC supplement.
+
+### Inferential Statistics 
+
+Does the tooth length depend on the delivery method? Do a t-test.
+
+```{r test1}
+len<-ToothGrowth$len
+supp<-ToothGrowth$supp
+dose<-ToothGrowth$dose
+
+sapply(MeanSupp, var)
+t.test(len[supp=="OJ"], len[supp=="VC"], paired = FALSE, var.equal = FALSE)
+```
+
+The pvalue is 0.06 which is higher than 0.05. From this we would conclude that supplements have no impact on tooth length.
+
+Let's look at tooth length by dose. Have to compare:
+
+Compare doses 0.5 and 1.0
+
+```{r test2}
+ToothGrowth_sub <- subset(ToothGrowth, ToothGrowth$dose %in% c(1.0,0.5))
+t.test(len~dose,data=ToothGrowth_sub)
+```
+
+Compare doses 0.5 and 2.0
+
+```{r test3}
+ToothGrowth_sub <- subset(ToothGrowth, ToothGrowth$dose %in% c(0.5,2.0))
+t.test(len~dose,data=ToothGrowth_sub)
+```
+
+Compare doses 1 and 2
+
+```{r test4}
+ToothGrowth_sub <- subset(ToothGrowth, ToothGrowth$dose %in% c(1.0,2.0))
+t.test(len~dose,data=ToothGrowth_sub)
+```
+
+For each of these comparisons, the pvalues are close to zero. The confidence intervals is not greater than zero. Therefore we conclude that the tooth length increases with increasing does and the null hypothesis can be rejected.
+
+# Conclusions 
+
+From the t tests analysis we can conclude that the supplement had no effect on the tooth length but that increase doses of either supplement resulted in larger tooth length.
